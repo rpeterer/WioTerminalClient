@@ -16,6 +16,7 @@ char mqttBroker[] = "10.42.0.1";
 void callback(char* topic, byte* payload, unsigned int length);
 void reconnect();
 void printStatusLine(const char* msg);
+void updateScreen(char * new_msg);
 
 // global variable
 TFT_eSPI tft;
@@ -62,6 +63,9 @@ void setup() {
   // setup mqtt
   client.setServer(mqttBroker, 1883);
   client.setCallback(callback);
+
+  // setup buzzer
+  pinMode(WIO_BUZZER, OUTPUT);
 }
 
 void loop() {
@@ -76,18 +80,36 @@ void printStatusLine(const char* msg) {
   Serial.println(msg);
   char buffer[25];
   sprintf(buffer, "ID:%-2.2s IP:%-15.15s", MQTT_CLIENT_ID, msg);
-  tft.drawString(buffer, 5, 15);
+  tft.drawString(buffer, 5, 10);
   tft.drawLine(0, 40, 320, 40, TFT_BLACK);
+}
+
+void updateScreen(char * new_msg) {
+  const int ROW_NR = 6;
+  static int head = 0;
+  static char lines[ROW_NR][30] = {'\0', '\0', '\0', '\0', '\0', '\0'};
+
+  strcpy(lines[head % ROW_NR], new_msg);
+  Serial.println(new_msg);
+  Serial.println(lines[head % ROW_NR]);
+  for (int i = 0; i < ROW_NR; i++) {
+    tft.drawString(lines[(ROW_NR + head - i) % ROW_NR], 5, 50 + i * 30);
+  }
+
+  head++;
+
+  analogWrite(WIO_BUZZER, 128);
+  delay(100);
+  analogWrite(WIO_BUZZER, 0);
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
   char* message = {reinterpret_cast<char*>(payload)};
   message[length] = '\0';
   char buffer[30];
-  sprintf(buffer, "%-25.25s", message);
-
-  tft.drawString(">", 5, 150);
-  tft.drawString(buffer, 20, 150);
+  buffer[0] = '\0';
+  sprintf(buffer, ">%-26.26s\0", message);
+  updateScreen(buffer);
 }
 
 void reconnect() {
