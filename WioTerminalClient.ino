@@ -18,6 +18,8 @@ LIS3DHTR<TwoWire> lis;
 WiFiClient wifiClient;
 PubSubClient client(wifiClient);
 unsigned long currentTime;
+String privateTopic = "msg/" + String(MQTT_CLIENT_ID);
+String publicTopic = "msg/0";
 
 void setup() {
   // setup serial
@@ -76,6 +78,17 @@ void loop() {
 
     // cyclic loop
     Serial.println(" Hallo Welt");
+    float x, y, z;
+
+    x = lis.getAccelerationX();
+    y = lis.getAccelerationY();
+    z = lis.getAccelerationZ();
+
+    String topic = "tele/" + String(MQTT_CLIENT_ID) + "/acc";
+    String data = "{\"x\": " + String(x) + "," + "\"y\": " + String(y)+"," + "\"z\": " + String(z) + "}";    
+    if (!client.publish(topic.c_str(), data.c_str())) {
+      Serial.println("Message failed to send.");
+    }
 
   }
   client.loop();
@@ -109,7 +122,12 @@ void callback(char* topic, byte* payload, unsigned int length) {
   char* message = {reinterpret_cast<char*>(payload)};
   message[length] = '\0';
   
-  if (!strcmp(topic, "msg/0")) {
+  if (!strcmp(topic, publicTopic.c_str())) {
+    char buffer[30];
+    buffer[0] = '\0';
+    sprintf(buffer, ">%-26.26s\0", message);
+    updateScreen(buffer);
+  } else if (!strcmp(topic, privateTopic.c_str())) {
     char buffer[30];
     buffer[0] = '\0';
     sprintf(buffer, ">%-26.26s\0", message);
@@ -128,7 +146,8 @@ void reconnect() {
       Serial.println("connected");
 
       // subscribe to topic
-      client.subscribe("msg/0");
+      client.subscribe(publicTopic.c_str());
+      client.subscribe(privateTopic.c_str());
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
