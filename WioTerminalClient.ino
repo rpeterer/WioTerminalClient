@@ -3,14 +3,8 @@
 #include "rpcWiFi.h"
 #include <PubSubClient.h>
 #include <WiFiClientSecure.h>
+#include "config.h"
 
-// constants
-const char SSID[] = "IoT-BG";
-const char PASSWORD[] = "superSecure";
-const char MQTT_CLIENT_ID[] = "1";
-const char MQTT_CLIENT_NAME[] = "wio1";
-
-char mqttBroker[] = "10.42.0.1";
 
 // function declarations
 void callback(char* topic, byte* payload, unsigned int length);
@@ -18,11 +12,12 @@ void reconnect();
 void printStatusLine(const char* msg);
 void updateScreen(char * new_msg);
 
-// global variable
+// global variables
 TFT_eSPI tft;
 LIS3DHTR<TwoWire> lis;
 WiFiClient wifiClient;
 PubSubClient client(wifiClient);
+unsigned long currentTime;
 
 void setup() {
   // setup serial
@@ -66,13 +61,23 @@ void setup() {
 
   // setup buzzer
   pinMode(WIO_BUZZER, OUTPUT);
+
+  // setup cyclic counter
+  currentTime = millis();
+ 
 }
 
 void loop() {
   if (!client.connected()) {
     reconnect();
   }
-  client.subscribe("msg/0");
+  if (millis() - currentTime >= CYCLE_TIME_MS) {
+    currentTime = millis();
+
+    // cyclic loop
+    Serial.println(" Hallo Welt");
+
+  }
   client.loop();
 }
 
@@ -90,26 +95,29 @@ void updateScreen(char * new_msg) {
   static char lines[ROW_NR][30] = {'\0', '\0', '\0', '\0', '\0', '\0'};
 
   strcpy(lines[head % ROW_NR], new_msg);
-  Serial.println(new_msg);
-  Serial.println(lines[head % ROW_NR]);
   for (int i = 0; i < ROW_NR; i++) {
     tft.drawString(lines[(ROW_NR + head - i) % ROW_NR], 5, 50 + i * 30);
   }
 
-  head++;
-
   analogWrite(WIO_BUZZER, 128);
   delay(100);
   analogWrite(WIO_BUZZER, 0);
+  head++;
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
   char* message = {reinterpret_cast<char*>(payload)};
   message[length] = '\0';
-  char buffer[30];
-  buffer[0] = '\0';
-  sprintf(buffer, ">%-26.26s\0", message);
-  updateScreen(buffer);
+  
+  if (!strcmp(topic, "msg/0")) {
+    char buffer[30];
+    buffer[0] = '\0';
+    sprintf(buffer, ">%-26.26s\0", message);
+    updateScreen(buffer);
+  } else {
+    Serial.println(message);
+  }
+  
 }
 
 void reconnect() {
@@ -118,6 +126,9 @@ void reconnect() {
 
     if (client.connect(MQTT_CLIENT_NAME)) {
       Serial.println("connected");
+
+      // subscribe to topic
+      client.subscribe("msg/0");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
