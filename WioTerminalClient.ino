@@ -12,6 +12,8 @@ void reconnect();
 void printStatusLine(const char* msg);
 void updateScreen(char * new_msg);
 void playSound();
+void publishAcceleration();
+void publishLight();
 
 // global variables
 TFT_eSPI tft;
@@ -65,6 +67,9 @@ void setup() {
   // setup buzzer
   pinMode(WIO_BUZZER, OUTPUT);
 
+  // setup light sensor
+  pinMode(WIO_LIGHT, INPUT);
+
   // setup cyclic counter
   currentTime = millis();
  
@@ -78,21 +83,38 @@ void loop() {
     currentTime = millis();
 
     // cyclic loop
-    Serial.println(" Hallo Welt");
-    float x, y, z;
-
-    x = lis.getAccelerationX();
-    y = lis.getAccelerationY();
-    z = lis.getAccelerationZ();
-
-    String topic = "tele/" + String(MQTT_CLIENT_ID) + "/acc";
-    String data = "{\"x\": " + String(x) + "," + "\"y\": " + String(y)+"," + "\"z\": " + String(z) + "}";    
-    if (!client.publish(topic.c_str(), data.c_str())) {
-      Serial.println("Message failed to send.");
-    }
-
+    publishAcceleration();
+    publishLight();
   }
   client.loop();
+}
+
+void playSound() {
+  analogWrite(WIO_BUZZER, 128);
+  delay(100);
+  analogWrite(WIO_BUZZER, 0);
+}
+
+void publishAcceleration() {
+  float x, y, z;
+
+  x = lis.getAccelerationX();
+  y = lis.getAccelerationY();
+  z = lis.getAccelerationZ();
+
+  String accTopic = "tele/" + String(MQTT_CLIENT_ID) + "/acc";
+  String data = "{\"x\": " + String(x) + "," + "\"y\": " + String(y)+"," + "\"z\": " + String(z) + "}";    
+  if (!client.publish(accTopic.c_str(), data.c_str())) {
+    Serial.println("Acc message failed to send.");
+  }
+}
+
+void publishLight() {
+  String lightTopic = "tele/" + String(MQTT_CLIENT_ID) + "/light";
+  int light = analogRead(WIO_LIGHT);
+  if (!client.publish(lightTopic.c_str(), std::to_string(light).c_str())) {
+    Serial.println("Light message failed to send.");
+  }
 }
 
 void printStatusLine(const char* msg) {
@@ -119,29 +141,19 @@ void updateScreen(char * new_msg) {
 void callback(char* topic, byte* payload, unsigned int length) {
   char* message = {reinterpret_cast<char*>(payload)};
   message[length] = '\0';
+  char buffer[30];
+  sprintf(buffer, ">%-26.26s", message);
   
   if (!strcmp(topic, publicTopic.c_str())) {
-    char buffer[30];
-    buffer[0] = '\0';
-    sprintf(buffer, ">%-26.26s\0", message);
     updateScreen(buffer);
     playSound();
   } else if (!strcmp(topic, privateTopic.c_str())) {
-    char buffer[30];
-    buffer[0] = '\0';
-    sprintf(buffer, ">%-26.26s\0", message);
     updateScreen(buffer);
     playSound();
   } else {
     Serial.println(message);
   }
   
-}
-
-void playSound() {
-  analogWrite(WIO_BUZZER, 128);
-  delay(100);
-  analogWrite(WIO_BUZZER, 0);
 }
 
 void reconnect() {
