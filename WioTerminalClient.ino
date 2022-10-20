@@ -11,6 +11,7 @@ void callback(char* topic, byte* payload, unsigned int length);
 void reconnect();
 void printStatusLine(const char* msg);
 void updateScreen(char * new_msg);
+void playSound();
 
 // global variables
 TFT_eSPI tft;
@@ -112,9 +113,6 @@ void updateScreen(char * new_msg) {
     tft.drawString(lines[(ROW_NR + head - i) % ROW_NR], 5, 50 + i * 30);
   }
 
-  analogWrite(WIO_BUZZER, 128);
-  delay(100);
-  analogWrite(WIO_BUZZER, 0);
   head++;
 }
 
@@ -127,15 +125,23 @@ void callback(char* topic, byte* payload, unsigned int length) {
     buffer[0] = '\0';
     sprintf(buffer, ">%-26.26s\0", message);
     updateScreen(buffer);
+    playSound();
   } else if (!strcmp(topic, privateTopic.c_str())) {
     char buffer[30];
     buffer[0] = '\0';
     sprintf(buffer, ">%-26.26s\0", message);
     updateScreen(buffer);
+    playSound();
   } else {
     Serial.println(message);
   }
   
+}
+
+void playSound() {
+  analogWrite(WIO_BUZZER, 128);
+  delay(100);
+  analogWrite(WIO_BUZZER, 0);
 }
 
 void reconnect() {
