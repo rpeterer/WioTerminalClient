@@ -90,31 +90,21 @@ void loop() {
 }
 
 void playSound() {
-  analogWrite(WIO_BUZZER, 128);
-  delay(100);
-  analogWrite(WIO_BUZZER, 0);
+  /*
+    here you should write your code
+  */
 }
 
 void publishAcceleration() {
-  float x, y, z;
-
-  x = lis.getAccelerationX();
-  y = lis.getAccelerationY();
-  z = lis.getAccelerationZ();
-
-  String accTopic = "tele/" + String(MQTT_CLIENT_ID) + "/acc";
-  String data = "{\"x\": " + String(x) + "," + "\"y\": " + String(y)+"," + "\"z\": " + String(z) + "}";    
-  if (!client.publish(accTopic.c_str(), data.c_str())) {
-    Serial.println("Acc message failed to send.");
-  }
+  /*
+    here you should write your code
+  */
 }
 
 void publishLight() {
-  String lightTopic = "tele/" + String(MQTT_CLIENT_ID) + "/light";
-  int light = analogRead(WIO_LIGHT);
-  if (!client.publish(lightTopic.c_str(), std::to_string(light).c_str())) {
-    Serial.println("Light message failed to send.");
-  }
+  /*
+    here you should write your code
+  */
 }
 
 void printStatusLine(const char* msg) {
@@ -153,7 +143,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
   } else {
     Serial.println(message);
   }
-  
 }
 
 void reconnect() {
