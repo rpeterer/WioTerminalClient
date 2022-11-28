@@ -95,6 +95,14 @@ void playSound() {
   analogWrite(WIO_BUZZER, 0);
 }
 
+void publishLight() {
+  String lightTopic = "tele/" + String(MQTT_CLIENT_ID) + "/light";
+  String lightValue = String(analogRead(WIO_LIGHT));
+  if (!client.publish(lightTopic.c_str(), lightValue.c_str())) {
+    Serial.println("Light message failed to send.");
+  }
+}
+
 void publishAcceleration() {
   float x, y, z;
 
@@ -109,13 +117,6 @@ void publishAcceleration() {
   }
 }
 
-void publishLight() {
-  String lightTopic = "tele/" + String(MQTT_CLIENT_ID) + "/light";
-  int light = analogRead(WIO_LIGHT);
-  if (!client.publish(lightTopic.c_str(), std::to_string(light).c_str())) {
-    Serial.println("Light message failed to send.");
-  }
-}
 
 void printStatusLine(const char* msg) {
   Serial.println(msg);
