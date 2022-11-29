@@ -72,7 +72,6 @@ void setup() {
 
   // setup cyclic counter
   currentTime = millis();
- 
 }
 
 void loop() {
