@@ -111,7 +111,8 @@ void publishAcceleration() {
   z = lis.getAccelerationZ();
 
   String accTopic = "tele/" + String(MQTT_CLIENT_ID) + "/acc";
-  String data = "{\"x\": " + String(x) + "," + "\"y\": " + String(y) + "," + "\"z\": " + String(z) + "}";    
+  String data = "{\"x\": " + String(x) + ",\"y\": " + String(y) + ",\"z\": " + String(z) + "}"; 
+
   if (!client.publish(accTopic.c_str(), data.c_str())) {
     Serial.println("Acc message failed to send.");
   }
